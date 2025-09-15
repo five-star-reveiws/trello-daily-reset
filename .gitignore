@@ -1,2 +1,4 @@
 .env
 trello_cache.json
+trello-client
+.gocache/

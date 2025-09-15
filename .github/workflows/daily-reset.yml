@@ -2,8 +2,8 @@ name: Daily Trello Reset
 
 on:
   schedule:
-    # Test run: 2 minutes from now (16:17 MDT = 22:17 UTC)
-    - cron: '17 22 * * *'
+    # Test run: 4:38 PM MDT (22:38 UTC)
+    - cron: '38 22 * * *'
     # Regular schedule: 8:00 PM MDT daily (02:00 UTC next day)
     - cron: '0 2 * * *'
   workflow_dispatch: # Allow manual triggering for testing

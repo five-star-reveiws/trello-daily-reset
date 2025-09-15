@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 type TrelloClient struct {
@@ -16,13 +17,15 @@ type TrelloClient struct {
 }
 
 type Card struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"desc"`
-	URL         string `json:"url"`
-	ShortURL    string `json:"shortUrl"`
-	Closed      bool   `json:"closed"`
-	IDList      string `json:"idList"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"desc"`
+	URL         string    `json:"url"`
+	ShortURL    string    `json:"shortUrl"`
+	Closed      bool      `json:"closed"`
+	IDList      string    `json:"idList"`
+	Due         *time.Time `json:"due"`
+	DueComplete bool      `json:"dueComplete"`
 }
 
 type Board struct {
@@ -167,5 +170,67 @@ func (c *TrelloClient) LoadCache() (*CachedData, error) {
 	}
 
 	return &cache, nil
+}
+
+func (c *TrelloClient) UpdateCard(cardID, due string, dueComplete bool) error {
+	endpoint := fmt.Sprintf("/cards/%s", cardID)
+
+	u, err := url.Parse(c.BaseURL + endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("key", c.APIKey)
+	q.Set("token", c.APIToken)
+	q.Set("due", due)
+	q.Set("dueComplete", fmt.Sprintf("%t", dueComplete))
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *TrelloClient) ResetDailyTasks(boardName, listName string) error {
+	listID, err := c.FindListByName(boardName, listName)
+	if err != nil {
+		return err
+	}
+
+	cards, err := c.GetCardsInList(listID)
+	if err != nil {
+		return fmt.Errorf("failed to get cards: %w", err)
+	}
+
+	// Calculate next day due date (end of tomorrow)
+	tomorrow := time.Now().AddDate(0, 0, 1)
+	endOfTomorrow := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 23, 59, 59, 0, tomorrow.Location())
+	dueDate := endOfTomorrow.Format("2006-01-02T15:04:05.000Z")
+
+	fmt.Printf("Resetting %d daily tasks with due date: %s\n", len(cards), endOfTomorrow.Format("Jan 2, 2006 3:04 PM"))
+
+	for _, card := range cards {
+		fmt.Printf("Updating: %s\n", card.Name)
+		if err := c.UpdateCard(card.ID, dueDate, false); err != nil {
+			return fmt.Errorf("failed to update card %s: %w", card.Name, err)
+		}
+	}
+
+	fmt.Printf("Successfully reset %d daily tasks!\n", len(cards))
+	return nil
 }
 

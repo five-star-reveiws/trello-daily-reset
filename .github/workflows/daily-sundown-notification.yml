@@ -34,9 +34,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: sunset_cache.json
-        key: sunset-cache-${{ hashFiles('sunset_cache.json') }}
+        key: sunset-cache-mdt-v2-${{ hashFiles('sunset_cache.json') }}
         restore-keys: |
-          sunset-cache-
+          sunset-cache-mdt-v2-
 
     - name: Build Trello client
       run: go build -o trello-client
@@ -61,5 +61,5 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: sunset_cache.json
-        key: sunset-cache-${{ github.run_id }}
+        key: sunset-cache-mdt-v2-${{ github.run_id }}
       if: hashFiles('sunset_cache.json') != ''

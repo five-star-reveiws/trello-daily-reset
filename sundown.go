@@ -152,9 +152,10 @@ func fetchAndCacheSunsetData(lat, lng float64, startDate string) (string, error)
 	var todaySunset string
 
 	for _, result := range apiResponse.Results {
-		// Parse sunset time and convert to local time
-		sunsetTime, err := time.Parse("15:04", result.Sunset)
+		// Parse sunset time and convert to local time (API returns HH:MM:SS format)
+		sunsetTime, err := time.Parse("15:04:05", result.Sunset)
 		if err != nil {
+			fmt.Printf("Warning: failed to parse sunset time '%s': %v\n", result.Sunset, err)
 			continue // Skip invalid times
 		}
 

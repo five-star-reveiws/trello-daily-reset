@@ -514,7 +514,7 @@ func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasU
 		return fmt.Errorf("failed to get Canvas assignments: %w", err)
 	}
 
-	fmt.Printf("Found %d assignments due within 2 weeks\n", len(assignments))
+	fmt.Printf("Found %d assignments due within 3 months\n", len(assignments))
 
 	// Get all cards from the Makai School board
 	allCards, err := c.GetAllBoardCards("Makai School")

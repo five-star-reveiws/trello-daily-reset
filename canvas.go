@@ -162,7 +162,7 @@ func (c *CanvasClient) GetUpcomingAssignments(userID int) ([]CanvasAssignment, e
 	}
 
 	var allAssignments []CanvasAssignment
-	twoWeeksFromNow := time.Now().AddDate(0, 0, 14)
+	threeMonthsFromNow := time.Now().AddDate(0, 3, 0)
 
 	for _, course := range courses {
 		assignments, err := c.GetAssignments(course.ID)
@@ -171,7 +171,7 @@ func (c *CanvasClient) GetUpcomingAssignments(userID int) ([]CanvasAssignment, e
 			continue
 		}
 
-		// Filter assignments due within 2 weeks
+		// Filter assignments due within 3 months
 		for _, assignment := range assignments {
 			if assignment.DueAt == "" {
 				continue // Skip assignments with no due date
@@ -183,8 +183,8 @@ func (c *CanvasClient) GetUpcomingAssignments(userID int) ([]CanvasAssignment, e
 				continue
 			}
 
-			// Only include assignments due within the next 2 weeks
-			if dueDate.Before(twoWeeksFromNow) && dueDate.After(time.Now().AddDate(0, 0, -1)) {
+			// Only include assignments due within the next 3 months
+			if dueDate.Before(threeMonthsFromNow) && dueDate.After(time.Now().AddDate(0, 0, -1)) {
 				allAssignments = append(allAssignments, assignment)
 			}
 		}

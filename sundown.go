@@ -165,13 +165,19 @@ func fetchAndCacheSunsetData(lat, lng float64, startDate string) (string, error)
 			continue
 		}
 
-		// Combine date and time
-		fullSunset := time.Date(resultDate.Year(), resultDate.Month(), resultDate.Day(),
-			sunsetTime.Hour(), sunsetTime.Minute(), 0, 0, time.UTC)
+		// Load Mountain Time zone
+		mountainTZ, err := time.LoadLocation("America/Denver")
+		if err != nil {
+			fmt.Printf("Warning: failed to load Mountain timezone: %v\n", err)
+			mountainTZ = time.UTC // fallback to UTC
+		}
 
-		// Convert to local timezone
-		localSunset := fullSunset.Local()
-		formattedTime := localSunset.Format("3:04 PM MST")
+		// The API returns times already adjusted for the location's timezone
+		// So we create the time directly in Mountain Time
+		fullSunset := time.Date(resultDate.Year(), resultDate.Month(), resultDate.Day(),
+			sunsetTime.Hour(), sunsetTime.Minute(), sunsetTime.Second(), 0, mountainTZ)
+
+		formattedTime := fullSunset.Format("3:04 PM MST")
 
 		// Store in cache
 		cache.Data[result.Date] = formattedTime

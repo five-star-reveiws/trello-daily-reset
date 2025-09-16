@@ -41,6 +41,14 @@ jobs:
     - name: Build Trello client
       run: go build -o trello-client
 
+    - name: Refresh Trello cache
+      env:
+        TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+        TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
+      run: |
+        echo "Refreshing Trello cache..."
+        ./trello-client --refresh
+
     - name: Create sundown notification
       env:
         TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}

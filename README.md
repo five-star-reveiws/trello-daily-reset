@@ -53,7 +53,7 @@ To enable daily sync from a Moodle/Open LMS site that shows a "Get the mobile ap
 - Set environment variables:
   - `MOODLE_BASE_URL` — e.g. `https://ohsu.mrooms3.net`
   - `MOODLE_WSTOKEN` — a Mobile App service token (see below)
-  - Optional: `MOODLE_SYNC_TO` — end date for included assignments (`YYYY-MM-DD`); defaults to 60 days ahead.
+  - Optional: `MOODLE_SYNC_TO` — end date for included assignments (`YYYY-MM-DD`); defaults to 3 months ahead.
 
 - Get a Mobile App token:
   - **For OHSU/MHA**: Visit: `https://ohsu.mrooms3.net/login/token.php?service=moodle_mobile_app&username=29farnron&password=<password>`
@@ -69,7 +69,7 @@ To enable daily sync from a Moodle/Open LMS site that shows a "Get the mobile ap
 
 - Sync assignments to Trello Weekly list:
   ```bash
-  # default: next 60 days
+  # default: next 3 months
   go run . --sync-moodle
 
   # or specify a date (e.g., end of quarter)

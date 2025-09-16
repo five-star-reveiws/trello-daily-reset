@@ -150,7 +150,7 @@ func main() {
 				log.Fatalf("Invalid MOODLE_SYNC_TO date (want YYYY-MM-DD): %v", err)
 			}
 		} else {
-			end = time.Now().AddDate(0, 0, 60) // default 60 days ahead
+			end = time.Now().AddDate(0, 3, 0) // default 3 months ahead
 		}
 
 		if err := client.SyncMoodleAssignments(moodleClient, end, *syncMoodleDry); err != nil {
@@ -181,7 +181,7 @@ func main() {
 				log.Fatalf("Invalid MOODLE_SYNC_TO date (want YYYY-MM-DD): %v", err)
 			}
 		} else {
-			end = time.Now().AddDate(0, 0, 60)
+			end = time.Now().AddDate(0, 3, 0) // default 3 months ahead
 		}
 
 		if err := client.SyncMoodleAssignments(moodleClient, end, true); err != nil {

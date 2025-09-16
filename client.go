@@ -468,3 +468,4 @@ func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasU
 	return nil
 }
 
+

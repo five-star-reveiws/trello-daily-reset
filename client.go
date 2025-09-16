@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -390,6 +391,87 @@ func (c *TrelloClient) FindCardByMoodleAssignmentID(cards []Card, moodleID int) 
 }
 
 
+func (c *TrelloClient) SortCardsByDueDate(listID string) error {
+	// Get all cards in the list
+	cards, err := c.GetCardsInList(listID)
+	if err != nil {
+		return fmt.Errorf("failed to get cards: %w", err)
+	}
+
+	if len(cards) <= 1 {
+		return nil // No need to sort
+	}
+
+	// Sort cards by due date (cards without due dates go to the end)
+	sort.Slice(cards, func(i, j int) bool {
+		cardI, cardJ := cards[i], cards[j]
+
+		// Cards without due dates go to the end
+		if cardI.Due == nil && cardJ.Due == nil {
+			return false // Preserve existing order for cards without due dates
+		}
+		if cardI.Due == nil {
+			return false // cardI goes after cardJ
+		}
+		if cardJ.Due == nil {
+			return true // cardI goes before cardJ
+		}
+
+		// Both have due dates - sort by earliest first
+		return cardI.Due.Before(*cardJ.Due)
+	})
+
+	// Update card positions in Trello - move cards in reverse order
+	// so the first card (earliest due date) ends up at the top
+	for i := len(cards) - 1; i >= 0; i-- {
+		card := cards[i]
+		err := c.UpdateCardPosition(card.ID, "top")
+		if err != nil {
+			fmt.Printf("Warning: failed to update position for card %s: %v\n", card.Name, err)
+		}
+		// Small delay to avoid rate limiting
+		if i > 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+
+	fmt.Printf("✅ Sorted %d cards by due date in list\n", len(cards))
+	return nil
+}
+
+func (c *TrelloClient) UpdateCardPosition(cardID, position string) error {
+	endpoint := fmt.Sprintf("/cards/%s", cardID)
+
+	u, err := url.Parse(c.BaseURL + endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("key", c.APIKey)
+	q.Set("token", c.APIToken)
+	q.Set("pos", position)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update card position: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func (c *TrelloClient) UpdateCardDescription(cardID, description string) error {
 	endpoint := fmt.Sprintf("/cards/%s", cardID)
 
@@ -510,6 +592,13 @@ func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasU
 	}
 
 	fmt.Printf("Canvas sync completed successfully!\n")
+
+	// Sort cards by due date in the Weekly list
+	fmt.Println("Sorting cards by due date...")
+	if err := c.SortCardsByDueDate(weeklyListID); err != nil {
+		fmt.Printf("Warning: failed to sort cards by due date: %v\n", err)
+	}
+
 	return nil
 }
 
@@ -547,11 +636,36 @@ func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate 
             courseName = fmt.Sprintf("Course %d", a.CourseID)
         }
 
+        // Get grade for this assignment (placeholder - will return nil for now)
+        var grade *MoodleGrade
+        // TODO: Implement actual grade checking when Moodle API details are available
+        // grade, err := moodleClient.GetAssignmentGrade(a.ID, userID)
+        // if err != nil {
+        //     fmt.Printf("Warning: failed to get grade for assignment %s: %v\n", a.Name, err)
+        // }
+
+        // Check if assignment has passing grade (>= 90%) and skip if so
+        if grade != nil && grade.GradeMax > 0 {
+            percentage := (grade.Grade / grade.GradeMax) * 100
+            if percentage >= 90 {
+                fmt.Printf("Skipping assignment with passing grade: %s (%.1f%%)\n", a.Name, percentage)
+                continue
+            }
+        }
+
         cardTitle := fmt.Sprintf("%s - %s", courseName, a.Name)
+
+        // Add REDO prefix if grade is below 90%
+        needsRedo := grade != nil && grade.GradeMax > 0 && (grade.Grade/grade.GradeMax)*100 < 90
+        if needsRedo && !strings.HasPrefix(cardTitle, "REDO - ") {
+            cardTitle = "REDO - " + cardTitle
+        } else if !needsRedo && strings.HasPrefix(cardTitle, "REDO - ") {
+            cardTitle = strings.TrimPrefix(cardTitle, "REDO - ")
+        }
 
         baseDescription := a.Intro
         // Many Moodle sites return HTML in Intro; keep as-is to preserve formatting.
-        meta := formatMoodleMetadata(a, courseName)
+        meta := formatMoodleMetadata(a, courseName, grade)
         fullDescription := strings.TrimSpace(baseDescription) + meta
 
         // Due date
@@ -590,5 +704,14 @@ func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate 
     }
 
     fmt.Printf("Moodle sync completed successfully!\n")
+
+    // Sort cards by due date in the Weekly list (if not dry run)
+    if !dryRun {
+        fmt.Println("Sorting cards by due date...")
+        if err := c.SortCardsByDueDate(weeklyListID); err != nil {
+            fmt.Printf("Warning: failed to sort cards by due date: %v\n", err)
+        }
+    }
+
     return nil
 }

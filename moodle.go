@@ -38,6 +38,14 @@ type MoodleAssignment struct {
     URL         string `json:"url"`
 }
 
+type MoodleGrade struct {
+    Grade      float64 `json:"grade"`
+    GradeMax   float64 `json:"grademax"`
+    UserID     int     `json:"userid"`
+    ItemID     int     `json:"itemid"`
+    Percentage float64 // Calculated field
+}
+
 type moodleAssignmentsResponse struct {
     Courses []struct {
         ID          int                 `json:"id"`
@@ -169,14 +177,57 @@ func (m *MoodleClient) GetUpcomingAssignments(toDate time.Time) ([]MoodleAssignm
     return filtered, names, nil
 }
 
-func formatMoodleMetadata(a MoodleAssignment, courseName string) string {
+// GetAssignmentGrade gets the grade for a specific assignment
+func (m *MoodleClient) GetAssignmentGrade(assignmentID, userID int) (*MoodleGrade, error) {
+    endpoint := fmt.Sprintf("%s/webservice/rest/server.php", m.BaseURL)
+
+    params := url.Values{}
+    params.Set("wstoken", m.Token)
+    params.Set("wsfunction", "core_grades_get_grades")
+    params.Set("moodlewsrestformat", "json")
+    params.Set("courseid", fmt.Sprintf("%d", assignmentID)) // This might need adjustment based on Moodle API
+    params.Set("userid", fmt.Sprintf("%d", userID))
+
+    resp, err := http.Get(endpoint + "?" + params.Encode())
+    if err != nil {
+        return nil, fmt.Errorf("failed to get assignment grade: %w", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("API request failed with status: %s", resp.Status)
+    }
+
+    _, err = io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read response: %w", err)
+    }
+
+    // For now, return nil to indicate no grade available
+    // This would need proper implementation based on Moodle's grade API structure
+    return nil, nil
+}
+
+func formatMoodleMetadata(a MoodleAssignment, courseName string, grade *MoodleGrade) string {
     var due string
     if a.DueDateUnix > 0 {
         due = time.Unix(a.DueDateUnix, 0).Format(time.RFC3339)
     } else {
         due = ""
     }
-    return fmt.Sprintf("\n\n---\nMoodle Assignment ID: %d\nCourse: %s\nOriginal Due Date: %s\nMoodle URL: %s",
-        a.ID, courseName, due, a.URL)
+
+    var gradeStr string
+    if grade != nil && grade.GradeMax > 0 {
+        percentage := (grade.Grade / grade.GradeMax) * 100
+        gradeStr = fmt.Sprintf("%.1f%%", percentage)
+        if percentage < 90 {
+            gradeStr += " (REDO NEEDED)"
+        }
+    } else {
+        gradeStr = "Not graded"
+    }
+
+    return fmt.Sprintf("\n\n---\nMoodle Assignment ID: %d\nCourse: %s\nOriginal Due Date: %s\nGrade: %s\nMoodle URL: %s",
+        a.ID, courseName, due, gradeStr, a.URL)
 }
 

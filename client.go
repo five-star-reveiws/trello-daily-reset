@@ -367,12 +367,57 @@ func (c *TrelloClient) GetAllBoardCards(boardName string) ([]Card, error) {
 }
 
 func (c *TrelloClient) FindCardByCanvasID(cards []Card, canvasID int, canvasType string) *Card {
-	searchPattern := fmt.Sprintf("Canvas %s ID: %d", canvasType, canvasID)
+    searchPattern := fmt.Sprintf("Canvas %s ID: %d", canvasType, canvasID)
 
-	for i, card := range cards {
-		if strings.Contains(card.Description, searchPattern) {
-			return &cards[i]
-		}
+    for i, card := range cards {
+        if strings.Contains(card.Description, searchPattern) {
+            return &cards[i]
+        }
+    }
+
+    return nil
+}
+
+func (c *TrelloClient) FindCardByMoodleAssignmentID(cards []Card, moodleID int) *Card {
+    searchPattern := fmt.Sprintf("Moodle Assignment ID: %d", moodleID)
+
+    for i, card := range cards {
+        if strings.Contains(card.Description, searchPattern) {
+            return &cards[i]
+        }
+    }
+    return nil
+}
+
+
+func (c *TrelloClient) UpdateCardDescription(cardID, description string) error {
+	endpoint := fmt.Sprintf("/cards/%s", cardID)
+
+	u, err := url.Parse(c.BaseURL + endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("key", c.APIKey)
+	q.Set("token", c.APIToken)
+	q.Set("desc", description)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update card: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status: %s", resp.Status)
 	}
 
 	return nil
@@ -469,3 +514,81 @@ func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasU
 }
 
 
+func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate time.Time, dryRun bool) error {
+    fmt.Println("Starting Moodle/Open LMS sync...")
+
+    // Pull upcoming assignments
+    assignments, courseNames, err := moodleClient.GetUpcomingAssignments(toDate)
+    if err != nil {
+        return fmt.Errorf("failed to get Moodle assignments: %w", err)
+    }
+    fmt.Printf("Found %d Moodle assignments due by %s\n", len(assignments), toDate.Format("2006-01-02"))
+
+    // Get all cards from the Makai School board
+    allCards, err := c.GetAllBoardCards("Makai School")
+    if err != nil {
+        return fmt.Errorf("failed to get Trello cards: %w", err)
+    }
+    fmt.Printf("Found %d existing cards on Makai School board\n", len(allCards))
+
+    var weeklyListID string
+    if !dryRun {
+        // Weekly list for new cards
+        var err error
+        weeklyListID, err = c.FindListByName("Makai School", "Weekly")
+        if err != nil {
+            return fmt.Errorf("failed to find Weekly list: %w", err)
+        }
+    }
+
+    for _, a := range assignments {
+        courseName := courseNames[a.CourseID]
+        if courseName == "" {
+            courseName = fmt.Sprintf("Course %d", a.CourseID)
+        }
+
+        cardTitle := fmt.Sprintf("%s - %s", courseName, a.Name)
+
+        baseDescription := a.Intro
+        // Many Moodle sites return HTML in Intro; keep as-is to preserve formatting.
+        meta := formatMoodleMetadata(a, courseName)
+        fullDescription := strings.TrimSpace(baseDescription) + meta
+
+        // Due date
+        var dueDate string
+        if a.DueDateUnix > 0 {
+            due := time.Unix(a.DueDateUnix, 0)
+            dueDate = due.Format("2006-01-02T15:04:05.000Z")
+        }
+
+        // Check for existing card
+        existing := c.FindCardByMoodleAssignmentID(allCards, a.ID)
+        if existing != nil {
+            if dryRun {
+                fmt.Printf("[DRY RUN] Would update card: %s (due %s)\n", cardTitle, dueDate)
+            } else {
+                fmt.Printf("Updating existing Moodle card: %s\n", cardTitle)
+                if err := c.UpdateCard(existing.ID, dueDate, false); err != nil {
+                    fmt.Printf("Warning: failed to update due date for %s: %v\n", cardTitle, err)
+                }
+                if existing.Description != fullDescription {
+                    if err := c.UpdateCardDescription(existing.ID, fullDescription); err != nil {
+                        fmt.Printf("Warning: failed to update description for %s: %v\n", cardTitle, err)
+                    }
+                }
+            }
+        } else {
+            if dryRun {
+                fmt.Printf("[DRY RUN] Would create card: %s (due %s)\n", cardTitle, dueDate)
+            } else {
+                fmt.Printf("Creating new Moodle card: %s\n", cardTitle)
+                if err := c.CreateCard(weeklyListID, cardTitle, fullDescription, dueDate); err != nil {
+                    fmt.Printf("Warning: failed to create card %s: %v\n", cardTitle, err)
+                }
+            }
+        }
+    }
+
+    fmt.Printf("Moodle sync completed successfully!\n")
+    return nil
+}

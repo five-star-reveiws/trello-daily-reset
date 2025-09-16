@@ -38,6 +38,14 @@ jobs:
         CANVAS_BASE_URL: https://alpine.instructure.com
       run: ./trello-client --sync-canvas
 
+    - name: Sync MHA assignments from Moodle
+      env:
+        TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+        TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
+        MOODLE_WSTOKEN: ${{ secrets.MOODLE_WSTOKEN }}
+        MOODLE_BASE_URL: https://ohsu.mrooms3.net
+      run: ./trello-client --sync-moodle
+
     - name: Run daily reset
       env:
         TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}

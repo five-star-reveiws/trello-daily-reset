@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
+    "flag"
+    "fmt"
+    "log"
+    "os"
+    "time"
 
-	"github.com/joho/godotenv"
+    "github.com/joho/godotenv"
 )
 
 func main() {
@@ -19,6 +20,10 @@ func main() {
 		createWeekly = flag.Bool("create-weekly", false, "Create weekly cards for next week")
 		testCanvas   = flag.Bool("test-canvas", false, "Test Canvas API connection")
 		syncCanvas   = flag.Bool("sync-canvas", false, "Sync Canvas assignments to Trello")
+		testMoodle   = flag.Bool("test-moodle", false, "Test Moodle/Open LMS connection")
+		syncMoodle   = flag.Bool("sync-moodle", false, "Sync Moodle/Open LMS assignments to Trello")
+		syncMoodleDry= flag.Bool("sync-moodle-dry-run", false, "Preview Moodle sync without Trello changes")
+		moodleTo     = flag.String("moodle-to", "", "Sync Moodle assignments due up to this date (YYYY-MM-DD); defaults to 60 days ahead")
 	)
 	flag.Parse()
 
@@ -76,6 +81,28 @@ func main() {
 		return
 	}
 
+
+	if *testMoodle {
+		moodleToken := os.Getenv("MOODLE_WSTOKEN")
+		moodleURL := os.Getenv("MOODLE_BASE_URL")
+		if moodleToken == "" || moodleURL == "" {
+			log.Fatal("Please set MOODLE_WSTOKEN and MOODLE_BASE_URL in .env or environment variables")
+		}
+		moodleClient := NewMoodleClient(moodleURL, moodleToken)
+		fmt.Println("Testing Moodle/Open LMS connection...")
+		userID, err := moodleClient.GetSiteInfo()
+		if err != nil {
+			log.Fatalf("Failed to get site info: %v", err)
+		}
+		courses, err := moodleClient.GetCourses(userID)
+		if err != nil {
+			log.Fatalf("Failed to get courses: %v", err)
+		}
+		fmt.Printf("✅ Moodle connected. UserID: %d, Courses: %d\n", userID, len(courses))
+		return
+	}
+
+
 	if *syncCanvas {
 		canvasToken := os.Getenv("CANVAS_API_TOKEN")
 		canvasURL := os.Getenv("CANVAS_BASE_URL")
@@ -96,6 +123,69 @@ func main() {
 
 		if err := client.SyncCanvasAssignments(canvasClient, user.ID); err != nil {
 			log.Fatalf("Failed to sync Canvas assignments: %v", err)
+		}
+		return
+	}
+
+	if *syncMoodle {
+		moodleToken := os.Getenv("MOODLE_WSTOKEN")
+		moodleURL := os.Getenv("MOODLE_BASE_URL")
+		if moodleToken == "" || moodleURL == "" {
+			log.Fatal("Please set MOODLE_WSTOKEN and MOODLE_BASE_URL in .env or environment variables")
+		}
+		moodleClient := NewMoodleClient(moodleURL, moodleToken)
+
+		// Determine end date
+		var end time.Time
+		if *moodleTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", *moodleTo)
+			if err != nil {
+				log.Fatalf("Invalid --moodle-to date format (want YYYY-MM-DD): %v", err)
+			}
+		} else if envTo := os.Getenv("MOODLE_SYNC_TO"); envTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", envTo)
+			if err != nil {
+				log.Fatalf("Invalid MOODLE_SYNC_TO date (want YYYY-MM-DD): %v", err)
+			}
+		} else {
+			end = time.Now().AddDate(0, 0, 60) // default 60 days ahead
+		}
+
+		if err := client.SyncMoodleAssignments(moodleClient, end, *syncMoodleDry); err != nil {
+			log.Fatalf("Failed to sync Moodle assignments: %v", err)
+		}
+		return
+	}
+
+	if *syncMoodleDry {
+		moodleToken := os.Getenv("MOODLE_WSTOKEN")
+		moodleURL := os.Getenv("MOODLE_BASE_URL")
+		if moodleToken == "" || moodleURL == "" {
+			log.Fatal("Please set MOODLE_WSTOKEN and MOODLE_BASE_URL in .env or environment variables")
+		}
+		moodleClient := NewMoodleClient(moodleURL, moodleToken)
+
+		var end time.Time
+		if *moodleTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", *moodleTo)
+			if err != nil {
+				log.Fatalf("Invalid --moodle-to date format (want YYYY-MM-DD): %v", err)
+			}
+		} else if envTo := os.Getenv("MOODLE_SYNC_TO"); envTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", envTo)
+			if err != nil {
+				log.Fatalf("Invalid MOODLE_SYNC_TO date (want YYYY-MM-DD): %v", err)
+			}
+		} else {
+			end = time.Now().AddDate(0, 0, 60)
+		}
+
+		if err := client.SyncMoodleAssignments(moodleClient, end, true); err != nil {
+			log.Fatalf("Failed to preview Moodle assignments: %v", err)
 		}
 		return
 	}
@@ -164,4 +254,3 @@ func main() {
 		fmt.Println()
 	}
 }
-

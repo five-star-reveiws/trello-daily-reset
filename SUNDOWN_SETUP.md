@@ -55,7 +55,7 @@ You can trigger the workflow manually:
 
 ## Trello Board Requirements
 
-1. **Board Name**: Update the workflow to use your board name
+1. **Board Name**: "Farnsworth Family" (configured in workflow)
 2. **List Name**: Must have a list named "Sundown Notification (DO NOT ALTER)"
 3. **User**: The notification will mention @nalani_farnsworth
 

@@ -55,7 +55,7 @@ jobs:
         TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
       run: |
         echo "Creating daily sundown notification..."
-        ./trello-client --sundown-notify "Makai School"
+        ./trello-client --sundown-notify "Farnsworth Family"
 
     - name: Save updated sunset cache
       uses: actions/cache/save@v3

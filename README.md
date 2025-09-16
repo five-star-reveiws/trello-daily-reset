@@ -1,9 +1,10 @@
-# Trello School Automation
+# Trello Integration Suite
 
-A Go-based automation system that syncs assignments from Canvas LMS and Moodle/Open LMS to Trello, with daily task management and weekly card creation.
+A Go-based automation system that syncs assignments from Canvas LMS, Moodle/Open LMS, and JIRA tasks to Trello, with daily task management and weekly card creation.
 
 ## Features
 
+- **JIRA Task Integration**: Syncs local JIRA tasks to Trello cards with status updates (no list movement)
 - **Canvas LMS Integration**: Syncs assignments and tracks grades with REDO logic for scores < 90%
 - **Moodle/Open LMS Integration**: Syncs assignments from MHA courses
 - **Daily Task Reset**: Updates due dates for daily tasks
@@ -45,6 +46,30 @@ go run . --test-canvas
 go run . --test-moodle
 go run . --cache  # View boards and lists
 ```
+
+## JIRA Task Sync
+
+Syncs local JIRA tasks (from mac-tasks workflow) to Trello Mac board:
+
+```bash
+# Sync JIRA tasks to Trello
+go run . --sync-jira
+
+# Specify custom tasks directory (optional)
+go run . --sync-jira --jira-tasks-dir /path/to/open-tasks
+```
+
+**How it works:**
+- Creates Trello cards for new JIRA tasks with task ID in title (e.g., "AK-58647: Fix authentication bug")
+- Updates existing cards with current status, next steps, and key findings
+- **Never moves cards between lists** - only updates descriptions and metadata
+- Extracts information from `STATUS.md` and task files in `/mac-tasks/open-tasks/`
+- Adds JIRA links and sync timestamps to card descriptions
+
+**Card format:**
+- **Title**: `{TASK-ID}: {Task Title}`
+- **Description**: Current status, JIRA info, next steps, key findings, JIRA link, sync timestamp
+- **Location**: Cards are created in the first list of the Mac board, existing cards stay in their current lists
 
 ## Moodle/Open LMS Sync
 
@@ -132,6 +157,9 @@ go run . --daily-reset
 
 # Create weekly cards for next week
 go run . --create-weekly
+
+# Sync JIRA tasks
+go run . --sync-jira
 ```
 
 ## Getting List ID

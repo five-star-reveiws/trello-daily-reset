@@ -24,6 +24,9 @@ func main() {
 		syncMoodle   = flag.Bool("sync-moodle", false, "Sync Moodle/Open LMS assignments to Trello")
 		syncMoodleDry= flag.Bool("sync-moodle-dry-run", false, "Preview Moodle sync without Trello changes")
 		moodleTo     = flag.String("moodle-to", "", "Sync Moodle assignments due up to this date (YYYY-MM-DD); defaults to 60 days ahead")
+		syncJira     = flag.Bool("sync-jira", false, "Sync JIRA tasks to Trello")
+		jiraTasksDir = flag.String("jira-tasks-dir", "/Users/macfarnsworth/Workspaces/Alkira/mac-tasks/open-tasks", "Directory containing JIRA tasks")
+		sundownNotify= flag.String("sundown-notify", "", "Create daily sundown notification on specified board")
 	)
 	flag.Parse()
 
@@ -186,6 +189,22 @@ func main() {
 
 		if err := client.SyncMoodleAssignments(moodleClient, end, true); err != nil {
 			log.Fatalf("Failed to preview Moodle assignments: %v", err)
+		}
+		return
+	}
+
+	if *syncJira {
+		fmt.Println("Syncing JIRA tasks to Trello...")
+		if err := client.SyncJiraTasks(*jiraTasksDir); err != nil {
+			log.Fatalf("Failed to sync JIRA tasks: %v", err)
+		}
+		return
+	}
+
+	if *sundownNotify != "" {
+		fmt.Printf("Creating sundown notification on board: %s\n", *sundownNotify)
+		if err := client.CreateDailySundownNotification(*sundownNotify); err != nil {
+			log.Fatalf("Failed to create sundown notification: %v", err)
 		}
 		return
 	}

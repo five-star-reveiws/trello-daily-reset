@@ -17,6 +17,8 @@ func main() {
 		list         = flag.String("list", "", "List name to get cards from")
 		dailyReset   = flag.Bool("daily-reset", false, "Reset Makai's daily tasks with new due dates")
 		createWeekly = flag.Bool("create-weekly", false, "Create weekly cards for next week")
+		testCanvas   = flag.Bool("test-canvas", false, "Test Canvas API connection")
+		syncCanvas   = flag.Bool("sync-canvas", false, "Sync Canvas assignments to Trello")
 	)
 	flag.Parse()
 
@@ -54,6 +56,46 @@ func main() {
 		fmt.Println("Creating weekly cards for next week...")
 		if err := client.CreateWeeklyCards(); err != nil {
 			log.Fatalf("Failed to create weekly cards: %v", err)
+		}
+		return
+	}
+
+	if *testCanvas {
+		canvasToken := os.Getenv("CANVAS_API_TOKEN")
+		canvasURL := os.Getenv("CANVAS_BASE_URL")
+
+		if canvasToken == "" || canvasURL == "" {
+			log.Fatal("Please set CANVAS_API_TOKEN and CANVAS_BASE_URL in .env file or environment variables")
+		}
+
+		canvasClient := NewCanvasClient(canvasToken, canvasURL)
+		fmt.Println("Testing Canvas API connection...")
+		if err := canvasClient.TestConnection(); err != nil {
+			log.Fatalf("Failed to connect to Canvas: %v", err)
+		}
+		return
+	}
+
+	if *syncCanvas {
+		canvasToken := os.Getenv("CANVAS_API_TOKEN")
+		canvasURL := os.Getenv("CANVAS_BASE_URL")
+
+		if canvasToken == "" || canvasURL == "" {
+			log.Fatal("Please set CANVAS_API_TOKEN and CANVAS_BASE_URL in .env file or environment variables")
+		}
+
+		canvasClient := NewCanvasClient(canvasToken, canvasURL)
+
+		// Get Canvas user ID for grade lookups
+		user, err := canvasClient.GetCurrentUser()
+		if err != nil {
+			log.Fatalf("Failed to get Canvas user: %v", err)
+		}
+
+		fmt.Printf("Syncing Canvas assignments for user: %s (ID: %d)\n", user.Name, user.ID)
+
+		if err := client.SyncCanvasAssignments(canvasClient, user.ID); err != nil {
+			log.Fatalf("Failed to sync Canvas assignments: %v", err)
 		}
 		return
 	}

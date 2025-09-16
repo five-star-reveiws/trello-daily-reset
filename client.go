@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -328,6 +329,142 @@ func (c *TrelloClient) CreateWeeklyCards() error {
 	}
 
 	fmt.Printf("Successfully created %d weekly cards!\n", len(quarter.Subjects))
+	return nil
+}
+
+func (c *TrelloClient) GetAllBoardCards(boardName string) ([]Card, error) {
+	// First find the board ID
+	cache, err := c.LoadCache()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load cache: %w", err)
+	}
+
+	var boardID string
+	for _, board := range cache.Boards {
+		if normalizeString(board.Name) == normalizeString(boardName) {
+			boardID = board.ID
+			break
+		}
+	}
+
+	if boardID == "" {
+		return nil, fmt.Errorf("board '%s' not found", boardName)
+	}
+
+	// Get all cards from the board
+	endpoint := fmt.Sprintf("/boards/%s/cards", boardID)
+	body, err := c.makeRequest(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	var cards []Card
+	if err := json.Unmarshal(body, &cards); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cards: %w", err)
+	}
+
+	return cards, nil
+}
+
+func (c *TrelloClient) FindCardByCanvasID(cards []Card, canvasID int, canvasType string) *Card {
+	searchPattern := fmt.Sprintf("Canvas %s ID: %d", canvasType, canvasID)
+
+	for i, card := range cards {
+		if strings.Contains(card.Description, searchPattern) {
+			return &cards[i]
+		}
+	}
+
+	return nil
+}
+
+func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasUserID int) error {
+	fmt.Println("Starting Canvas sync...")
+
+	// Get upcoming assignments from Canvas
+	assignments, err := canvasClient.GetUpcomingAssignments(canvasUserID)
+	if err != nil {
+		return fmt.Errorf("failed to get Canvas assignments: %w", err)
+	}
+
+	fmt.Printf("Found %d assignments due within 2 weeks\n", len(assignments))
+
+	// Get all cards from the Makai School board
+	allCards, err := c.GetAllBoardCards("Makai School")
+	if err != nil {
+		return fmt.Errorf("failed to get Trello cards: %w", err)
+	}
+
+	fmt.Printf("Found %d existing cards on Makai School board\n", len(allCards))
+
+	// Get the Weekly list ID for new cards
+	weeklyListID, err := c.FindListByName("Makai School", "Weekly")
+	if err != nil {
+		return fmt.Errorf("failed to find Weekly list: %w", err)
+	}
+
+	// Process each Canvas assignment
+	for _, assignment := range assignments {
+		courseName, err := canvasClient.GetCourseNameByID(assignment.CourseID)
+		if err != nil {
+			fmt.Printf("Warning: failed to get course name for %d: %v\n", assignment.CourseID, err)
+			courseName = fmt.Sprintf("Course %d", assignment.CourseID)
+		}
+
+		// Get grade/submission info
+		submission, err := canvasClient.GetSubmission(assignment.CourseID, assignment.ID, canvasUserID)
+		if err != nil {
+			fmt.Printf("Warning: failed to get submission for assignment %s: %v\n", assignment.Name, err)
+			submission = nil
+		}
+
+		// Check if card already exists
+		existingCard := c.FindCardByCanvasID(allCards, assignment.ID, "Assignment")
+
+		// Prepare card data
+		cardTitle := fmt.Sprintf("%s - %s", courseName, assignment.Name)
+		needsRedo := submission != nil && submission.Score != nil && *submission.Score < 90
+		if needsRedo && !strings.HasPrefix(cardTitle, "REDO - ") {
+			cardTitle = "REDO - " + cardTitle
+		} else if !needsRedo && strings.HasPrefix(cardTitle, "REDO - ") {
+			cardTitle = strings.TrimPrefix(cardTitle, "REDO - ")
+		}
+
+		// Prepare description with Canvas metadata
+		baseDescription := stripCanvasMetadata(assignment.Description)
+		canvasMetadata := formatCanvasMetadata(assignment, courseName, submission)
+		fullDescription := baseDescription + canvasMetadata
+
+		// Calculate due date (use Canvas due date, or 1 week from now for REDO)
+		var dueDate string
+		if needsRedo {
+			redoDate := time.Now().AddDate(0, 0, 7)
+			dueDate = redoDate.Format("2006-01-02T15:04:05.000Z")
+		} else if assignment.DueAt != "" {
+			// Convert Canvas date to Trello format
+			canvasDue, err := time.Parse(time.RFC3339, assignment.DueAt)
+			if err == nil {
+				dueDate = canvasDue.Format("2006-01-02T15:04:05.000Z")
+			}
+		}
+
+		if existingCard != nil {
+			// Update existing card
+			fmt.Printf("Updating existing card: %s\n", cardTitle)
+			if err := c.UpdateCard(existingCard.ID, dueDate, false); err != nil {
+				fmt.Printf("Warning: failed to update due date for card %s: %v\n", cardTitle, err)
+			}
+			// Note: We'd need a UpdateCardNameAndDescription function for full updates
+		} else {
+			// Create new card
+			fmt.Printf("Creating new card: %s\n", cardTitle)
+			if err := c.CreateCard(weeklyListID, cardTitle, fullDescription, dueDate); err != nil {
+				fmt.Printf("Warning: failed to create card %s: %v\n", cardTitle, err)
+			}
+		}
+	}
+
+	fmt.Printf("Canvas sync completed successfully!\n")
 	return nil
 }
 

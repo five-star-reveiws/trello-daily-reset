@@ -1,15 +1,13 @@
-name: Trello Automation
+name: Weekly Card Creation
 
 on:
   schedule:
-    # Daily reset: 11:00 PM MDT (05:00 UTC next day)
-    - cron: '0 5 * * *'
-    # Weekly cards: Fridays 11:00 PM MDT (05:00 UTC Saturday)
+    # Fridays 11:00 PM MDT (05:00 UTC Saturday)
     - cron: '0 5 * * 6'
   workflow_dispatch: # Allow manual triggering for testing
 
 jobs:
-  reset-daily-tasks:
+  create-weekly-cards:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,8 +28,8 @@ jobs:
         TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
       run: ./trello-client --refresh
 
-    - name: Run daily reset
+    - name: Create weekly cards
       env:
         TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
         TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
-      run: ./trello-client --daily-reset
+      run: ./trello-client --create-weekly

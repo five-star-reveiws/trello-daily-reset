@@ -234,3 +234,100 @@ func (c *TrelloClient) ResetDailyTasks(boardName, listName string) error {
 	return nil
 }
 
+func (c *TrelloClient) CreateCard(listID, name, desc, due string) error {
+	endpoint := "/cards"
+
+	u, err := url.Parse(c.BaseURL + endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("key", c.APIKey)
+	q.Set("token", c.APIToken)
+	q.Set("idList", listID)
+	q.Set("name", name)
+	if desc != "" {
+		q.Set("desc", desc)
+	}
+	if due != "" {
+		q.Set("due", due)
+	}
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *TrelloClient) CreateWeeklyCards() error {
+	// Load subjects configuration
+	config, err := LoadSubjectsConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load subjects config: %w", err)
+	}
+
+	// Get current quarter and week
+	quarter, err := config.GetCurrentQuarter()
+	if err != nil {
+		return fmt.Errorf("failed to get current quarter: %w", err)
+	}
+
+	currentWeek, err := quarter.GetCurrentWeek()
+	if err != nil {
+		return fmt.Errorf("failed to get current week: %w", err)
+	}
+
+	// Get next week
+	nextWeek, err := quarter.GetNextWeek(currentWeek)
+	if err != nil {
+		return fmt.Errorf("failed to get next week: %w", err)
+	}
+
+	// Get the Weekly list ID
+	listID, err := c.FindListByName("Makai School", "Weekly")
+	if err != nil {
+		return fmt.Errorf("failed to find Weekly list: %w", err)
+	}
+
+	// Calculate due date (end of week at 6 PM)
+	endDate, err := time.Parse("2006-01-02", nextWeek.EndDate)
+	if err != nil {
+		return fmt.Errorf("failed to parse end date: %w", err)
+	}
+	dueTime := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 18, 0, 0, 0, endDate.Location())
+	dueDate := dueTime.Format("2006-01-02T15:04:05.000Z")
+
+	// Format week range
+	weekRange := quarter.FormatWeekRange(nextWeek)
+
+	fmt.Printf("Creating cards for Week %d: %s\n", nextWeek.Number, weekRange)
+	fmt.Printf("Due date: %s\n", dueTime.Format("January 2, 2006 at 3:04 PM"))
+
+	// Create cards for each subject
+	for _, subject := range quarter.Subjects {
+		cardName := fmt.Sprintf("%s Week %d: %s", subject, nextWeek.Number, weekRange)
+
+		fmt.Printf("Creating: %s\n", cardName)
+		if err := c.CreateCard(listID, cardName, "", dueDate); err != nil {
+			return fmt.Errorf("failed to create card for %s: %w", subject, err)
+		}
+	}
+
+	fmt.Printf("Successfully created %d weekly cards!\n", len(quarter.Subjects))
+	return nil
+}
+

@@ -11,11 +11,12 @@ import (
 
 func main() {
 	var (
-		refresh    = flag.Bool("refresh", false, "Refresh cache from Trello API")
-		showCache  = flag.Bool("cache", false, "Show cached boards and lists")
-		board      = flag.String("board", "", "Board name to get cards from")
-		list       = flag.String("list", "", "List name to get cards from")
-		dailyReset = flag.Bool("daily-reset", false, "Reset Makai's daily tasks with new due dates")
+		refresh      = flag.Bool("refresh", false, "Refresh cache from Trello API")
+		showCache    = flag.Bool("cache", false, "Show cached boards and lists")
+		board        = flag.String("board", "", "Board name to get cards from")
+		list         = flag.String("list", "", "List name to get cards from")
+		dailyReset   = flag.Bool("daily-reset", false, "Reset Makai's daily tasks with new due dates")
+		createWeekly = flag.Bool("create-weekly", false, "Create weekly cards for next week")
 	)
 	flag.Parse()
 
@@ -45,6 +46,14 @@ func main() {
 		fmt.Println("Resetting Makai's daily tasks...")
 		if err := client.ResetDailyTasks("Makai School", "Daily"); err != nil {
 			log.Fatalf("Failed to reset daily tasks: %v", err)
+		}
+		return
+	}
+
+	if *createWeekly {
+		fmt.Println("Creating weekly cards for next week...")
+		if err := client.CreateWeeklyCards(); err != nil {
+			log.Fatalf("Failed to create weekly cards: %v", err)
 		}
 		return
 	}

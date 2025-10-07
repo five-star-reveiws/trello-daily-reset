@@ -1,0 +1,126 @@
+{
+  "assignments": [
+    {
+      "id": 4101,
+      "name": "4.1 ASSIGNMENT: Energy Flow: Food Chains and Food Webs",
+      "intro": "This assignment covers energy flow through ecosystems including food chains and food webs.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4101",
+      "type": "quiz"
+    },
+    {
+      "id": 4102,
+      "name": "4.2 ASSIGNMENT: Owl Pellet Lab",
+      "intro": "Lab work analyzing owl pellets to understand predator-prey relationships.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4102",
+      "type": "assignment"
+    },
+    {
+      "id": 4201,
+      "name": "4.2 ASSIGNMENT: Romeo and Juliet Act 1",
+      "intro": "Read and analyze Romeo and Juliet Act 1 focusing on character development.",
+      "course": 301,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4201",
+      "type": "assignment"
+    },
+    {
+      "id": 4301,
+      "name": "4.1 ASSIGNMENT: Biome Presentation",
+      "intro": "Create a presentation about different biomes and their characteristics.",
+      "course": 401,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4301",
+      "type": "assignment"
+    },
+    {
+      "id": 4401,
+      "name": "4.1 PRACTICE: Solving Inequalities and Compound Inequalities",
+      "intro": "Practice solving various types of inequalities.",
+      "course": 501,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4401",
+      "type": "quiz"
+    },
+    {
+      "id": 4501,
+      "name": "4.5 ASSIGNMENT: High Achieving Assignment",
+      "intro": "This assignment has a high grade and should be filtered out.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4501",
+      "type": "assignment"
+    },
+    {
+      "id": 4601,
+      "name": "4.6 QUIZ: Ungraded Quiz",
+      "intro": "This quiz has no grade yet and should appear normally.",
+      "course": 301,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4601",
+      "type": "quiz"
+    },
+    {
+      "id": 5101,
+      "name": "5.1 ASSIGNMENT: Future Biology Assignment",
+      "intro": "Assignment for next week.",
+      "course": 201,
+      "duedate": 1758844800,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=5101",
+      "type": "assignment"
+    }
+  ],
+  "course_names": {
+    "201": "Biology Q1 (sec 2)",
+    "301": "English 9 Q1 (sec 2)",
+    "401": "Geography Q1 (sec 1)",
+    "501": "Secondary Math I Q1 (sec 2)"
+  },
+  "grades": {
+    "4101": {
+      "grade": 75.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4101,
+      "percentage": 75.0
+    },
+    "4102": {
+      "grade": 85.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4102,
+      "percentage": 85.0
+    },
+    "4201": {
+      "grade": 78.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4201,
+      "percentage": 78.0
+    },
+    "4301": {
+      "grade": 88.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4301,
+      "percentage": 88.0
+    },
+    "4401": {
+      "grade": 82.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4401,
+      "percentage": 82.0
+    },
+    "4501": {
+      "grade": 95.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4501,
+      "percentage": 95.0
+    }
+  }
+}

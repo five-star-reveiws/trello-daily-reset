@@ -1,0 +1,104 @@
+{
+  "export_date": "2025-09-18T17:15:02-06:00",
+  "end_date": "2025-12-31",
+  "total_count": 7,
+  "assignments": [
+    {
+      "id": 4784368,
+      "name": "G Major Scale Pass Off",
+      "description": "",
+      "due_at": "2025-09-20T05:59:59Z",
+      "course_id": 167358,
+      "html_url": "https://alpine.instructure.com/courses/167358/assignments/4784368"
+    },
+    {
+      "id": 4780563,
+      "name": "9/17 Rehearsal Skills",
+      "description": "",
+      "due_at": "2025-09-18T05:59:59Z",
+      "course_id": 167358,
+      "html_url": "https://alpine.instructure.com/courses/167358/assignments/4780563"
+    },
+    {
+      "id": 4596244,
+      "name": "Desarrollo Sostenible Vocab (9/25)",
+      "description": "",
+      "due_at": "2025-10-01T05:59:59Z",
+      "course_id": 167919,
+      "html_url": "https://alpine.instructure.com/courses/167919/assignments/4596244"
+    },
+    {
+      "id": 4596302,
+      "name": "carta formal - U1 AP Practica A (9/15)",
+      "description": "\u003cp\u003eLee la lectura. Luego, busca el sitio: apclassroom.collegeboard.org y haz busca la tarea de \"\u003cstrong\u003eCollege Board Unit 1 Progress Check FRQ Parte A\u003c/strong\u003e.\" Responde al correo electrónico que encuentras alli.\u003c/p\u003e\n\u003cp\u003e\u003ciframe style=\"width: 750px; height: 750px;\" title=\"Carta Formal\" src=\"https://docs.google.com/presentation/d/18uqwZSRLC2NNoMwdsGiTJAHLRJ9rCWkD2GxfHAw_nY8/preview\" loading=\"lazy\" allowfullscreen=\"allowfullscreen\" allow=\"geolocation *; microphone *; camera *; midi *; encrypted-media *; autoplay *\"\u003e\u003c/iframe\u003e\u003c/p\u003e\n",
+      "due_at": "2025-09-24T05:59:59Z",
+      "course_id": 167919,
+      "html_url": "https://alpine.instructure.com/courses/167919/assignments/4596302"
+    },
+    {
+      "id": 4596296,
+      "name": "U1FRQB  Progress Check (9/17)",
+      "description": "\u003cp\u003ePara hacer esta tarea, hay que ubicar el sitio de College Board e iniciar una sesión usando tu cuenta. Hay que hacer la tarea \"Unit 1 Progress Check: FRQ Part B\" que se encuentra en esta pagina: apclassroom.collegeboard.org\u003c/p\u003e\n\u003cp\u003eNo es nececario mandarme tu nota; voy a ubicarla despues.\u003c/p\u003e\n",
+      "due_at": "2025-09-24T05:59:59Z",
+      "course_id": 167919,
+      "html_url": "https://alpine.instructure.com/courses/167919/assignments/4596296"
+    },
+    {
+      "id": 4596266,
+      "name": "adverbios de tiempo (9/23)",
+      "description": "",
+      "due_at": "2025-09-26T05:59:59Z",
+      "course_id": 167919,
+      "html_url": "https://alpine.instructure.com/courses/167919/assignments/4596266"
+    },
+    {
+      "id": 4596256,
+      "name": "U1 Examen (9/19)",
+      "description": "",
+      "due_at": "2025-09-20T05:59:59Z",
+      "course_id": 167919,
+      "html_url": "https://alpine.instructure.com/courses/167919/assignments/4596256"
+    }
+  ],
+  "course_names": {
+    "167358": "25/26-S1-ORCHESTRA-ADV-CHENEY",
+    "167919": "25/26-S1-SPANISH DUAL IMMERSION 5H-Allred"
+  },
+  "submissions": {
+    "4596244": {
+      "score": null,
+      "grade": "",
+      "workflow_state": "unsubmitted"
+    },
+    "4596256": {
+      "score": null,
+      "grade": "",
+      "workflow_state": "unsubmitted"
+    },
+    "4596266": {
+      "score": null,
+      "grade": "",
+      "workflow_state": "unsubmitted"
+    },
+    "4596296": {
+      "score": null,
+      "grade": "",
+      "workflow_state": "unsubmitted"
+    },
+    "4596302": {
+      "score": null,
+      "grade": "",
+      "workflow_state": "unsubmitted"
+    },
+    "4780563": {
+      "score": 4,
+      "grade": "4",
+      "workflow_state": "graded"
+    },
+    "4784368": {
+      "score": 4,
+      "grade": "4",
+      "workflow_state": "graded"
+    }
+  }
+}

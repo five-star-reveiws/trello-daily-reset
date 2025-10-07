@@ -611,15 +611,32 @@ func (c *TrelloClient) SyncCanvasAssignments(canvasClient *CanvasClient, canvasU
 }
 
 
-func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate time.Time, dryRun bool) error {
+func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate time.Time, dryRun bool, testFile string) error {
     fmt.Println("Starting Moodle/Open LMS sync...")
 
-    // Pull upcoming assignments
-    assignments, courseNames, err := moodleClient.GetUpcomingAssignments(toDate)
-    if err != nil {
-        return fmt.Errorf("failed to get Moodle assignments: %w", err)
+    var assignments []MoodleAssignment
+    var courseNames map[int]string
+    var testGrades map[int]*MoodleGrade
+
+    if testFile != "" {
+        fmt.Printf("Using test data from file: %s\n", testFile)
+        testData, err := moodleClient.LoadTestData(testFile)
+        if err != nil {
+            return fmt.Errorf("failed to load test data: %w", err)
+        }
+        assignments = testData.Assignments
+        courseNames = testData.CourseNames
+        testGrades = testData.Grades
+        fmt.Printf("Loaded %d test assignments from file\n", len(assignments))
+    } else {
+        // Pull upcoming assignments from API
+        var err error
+        assignments, courseNames, err = moodleClient.GetUpcomingAssignments(toDate)
+        if err != nil {
+            return fmt.Errorf("failed to get Moodle assignments: %w", err)
+        }
+        fmt.Printf("Found %d Moodle assignments due by %s\n", len(assignments), toDate.Format("2006-01-02"))
     }
-    fmt.Printf("Found %d Moodle assignments due by %s\n", len(assignments), toDate.Format("2006-01-02"))
 
     // Get all cards from the Makai School board
     allCards, err := c.GetAllBoardCards("Makai School")
@@ -644,13 +661,26 @@ func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate 
             courseName = fmt.Sprintf("Course %d", a.CourseID)
         }
 
-        // Get grade for this assignment (placeholder - will return nil for now)
+        // Get grade for this assignment/quiz
         var grade *MoodleGrade
-        // TODO: Implement actual grade checking when Moodle API details are available
-        // grade, err := moodleClient.GetAssignmentGrade(a.ID, userID)
-        // if err != nil {
-        //     fmt.Printf("Warning: failed to get grade for assignment %s: %v\n", a.Name, err)
-        // }
+        if testFile != "" && testGrades != nil {
+            // Use test grade data
+            grade = testGrades[a.ID]
+        } else {
+            // Get user ID for grade lookup from API
+            userID, err := moodleClient.GetSiteInfo()
+            if err != nil {
+                fmt.Printf("Warning: failed to get user ID for grade lookup: %v\n", err)
+                userID = 0
+            }
+
+            if userID > 0 {
+                grade, err = moodleClient.GetAssignmentGrade(a.ID, a.CourseID, userID, a.Type)
+                if err != nil {
+                    fmt.Printf("Warning: failed to get grade for %s %s: %v\n", a.Type, a.Name, err)
+                }
+            }
+        }
 
         // Check if assignment has passing grade (>= 90%) and skip if so
         if grade != nil && grade.GradeMax > 0 {
@@ -690,9 +720,20 @@ func (c *TrelloClient) SyncMoodleAssignments(moodleClient *MoodleClient, toDate 
                 fmt.Printf("[DRY RUN] Would update card: %s (due %s)\n", cardTitle, dueDate)
             } else {
                 fmt.Printf("Updating existing Moodle card: %s\n", cardTitle)
+
+                // Update due date
                 if err := c.UpdateCard(existing.ID, dueDate, false); err != nil {
                     fmt.Printf("Warning: failed to update due date for %s: %v\n", cardTitle, err)
                 }
+
+                // Update title if it has changed (e.g., REDO prefix added/removed)
+                if existing.Name != cardTitle {
+                    if err := c.UpdateCardTitle(existing.ID, cardTitle); err != nil {
+                        fmt.Printf("Warning: failed to update title for %s: %v\n", cardTitle, err)
+                    }
+                }
+
+                // Update description if it has changed
                 if existing.Description != fullDescription {
                     if err := c.UpdateCardDescription(existing.ID, fullDescription); err != nil {
                         fmt.Printf("Warning: failed to update description for %s: %v\n", cardTitle, err)
@@ -1495,5 +1536,162 @@ func (c *TrelloClient) CreateDailySundownNotification(boardName string) error {
 	fmt.Printf("   Sundown time: %s\n", sundownTime)
 	fmt.Printf("   Notified: @nalani_farnsworth\n")
 
+	return nil
+}
+
+// ExportMoodleAssignments exports all Moodle assignments to a JSON file
+func (c *TrelloClient) ExportMoodleAssignments(moodleClient *MoodleClient, endDate time.Time) error {
+	assignments, courseNames, err := moodleClient.GetUpcomingAssignments(endDate)
+	if err != nil {
+		return fmt.Errorf("failed to get Moodle assignments: %w", err)
+	}
+
+	// Get user ID for grade lookups
+	userID, err := moodleClient.GetSiteInfo()
+	if err != nil {
+		return fmt.Errorf("failed to get Moodle site info: %w", err)
+	}
+
+	// Create export data structure
+	exportData := struct {
+		ExportDate   string                     `json:"export_date"`
+		EndDate      string                     `json:"end_date"`
+		TotalCount   int                        `json:"total_count"`
+		Assignments  []MoodleAssignment         `json:"assignments"`
+		CourseNames  map[int]string             `json:"course_names"`
+		Grades       map[int]*MoodleGrade       `json:"grades"`
+	}{
+		ExportDate:  time.Now().Format(time.RFC3339),
+		EndDate:     endDate.Format("2006-01-02"),
+		TotalCount:  len(assignments),
+		Assignments: assignments,
+		CourseNames: courseNames,
+		Grades:      make(map[int]*MoodleGrade),
+	}
+
+	// Get grades for each assignment
+	fmt.Printf("Fetching grades for %d assignments...\n", len(assignments))
+	for i, assignment := range assignments {
+		if i%10 == 0 {
+			fmt.Printf("Progress: %d/%d assignments processed\n", i, len(assignments))
+		}
+
+		grade, err := moodleClient.GetAssignmentGrade(assignment.ID, assignment.CourseID, userID, assignment.Type)
+		if err != nil {
+			fmt.Printf("Warning: failed to get grade for assignment %s: %v\n", assignment.Name, err)
+			continue
+		}
+		if grade != nil {
+			exportData.Grades[assignment.ID] = grade
+		}
+	}
+
+	// Create filename with timestamp
+	filename := fmt.Sprintf("moodle_assignments_%s.json", time.Now().Format("2006-01-02_15-04-05"))
+
+	// Write to JSON file
+	jsonData, err := json.MarshalIndent(exportData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal data to JSON: %w", err)
+	}
+
+	if err := os.WriteFile(filename, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write JSON file: %w", err)
+	}
+
+	fmt.Printf("✅ Exported %d Moodle assignments to %s\n", len(assignments), filename)
+	return nil
+}
+
+// ExportCanvasAssignments exports all Canvas assignments to a JSON file
+func (c *TrelloClient) ExportCanvasAssignments(canvasClient *CanvasClient, userID int, endDate time.Time) error {
+	courses, err := canvasClient.GetCourses()
+	if err != nil {
+		return fmt.Errorf("failed to get Canvas courses: %w", err)
+	}
+
+	var allAssignments []CanvasAssignment
+	courseNames := make(map[int]string)
+
+	fmt.Printf("Fetching assignments from %d courses...\n", len(courses))
+
+	for _, course := range courses {
+		courseNames[course.ID] = course.Name
+
+		assignments, err := canvasClient.GetAssignments(course.ID)
+		if err != nil {
+			fmt.Printf("Warning: failed to get assignments for course %s: %v\n", course.Name, err)
+			continue
+		}
+
+		// Filter assignments by end date
+		for _, assignment := range assignments {
+			if assignment.DueAt == "" {
+				continue
+			}
+
+			dueDate, err := time.Parse(time.RFC3339, assignment.DueAt)
+			if err != nil {
+				fmt.Printf("Warning: failed to parse due date for assignment %s: %v\n", assignment.Name, err)
+				continue
+			}
+
+			// Include assignments due before end date and after 1 day ago
+			if dueDate.Before(endDate.Add(24*time.Hour)) && dueDate.After(time.Now().AddDate(0, 0, -1)) {
+				allAssignments = append(allAssignments, assignment)
+			}
+		}
+	}
+
+	// Get submissions/grades for each assignment
+	submissions := make(map[int]*CanvasSubmission)
+	fmt.Printf("Fetching grades for %d assignments...\n", len(allAssignments))
+
+	for i, assignment := range allAssignments {
+		if i%10 == 0 {
+			fmt.Printf("Progress: %d/%d assignments processed\n", i, len(allAssignments))
+		}
+
+		submission, err := canvasClient.GetSubmission(assignment.CourseID, assignment.ID, userID)
+		if err != nil {
+			fmt.Printf("Warning: failed to get submission for assignment %s: %v\n", assignment.Name, err)
+			continue
+		}
+		if submission != nil {
+			submissions[assignment.ID] = submission
+		}
+	}
+
+	// Create export data structure
+	exportData := struct {
+		ExportDate   string                         `json:"export_date"`
+		EndDate      string                         `json:"end_date"`
+		TotalCount   int                            `json:"total_count"`
+		Assignments  []CanvasAssignment             `json:"assignments"`
+		CourseNames  map[int]string                 `json:"course_names"`
+		Submissions  map[int]*CanvasSubmission      `json:"submissions"`
+	}{
+		ExportDate:  time.Now().Format(time.RFC3339),
+		EndDate:     endDate.Format("2006-01-02"),
+		TotalCount:  len(allAssignments),
+		Assignments: allAssignments,
+		CourseNames: courseNames,
+		Submissions: submissions,
+	}
+
+	// Create filename with timestamp
+	filename := fmt.Sprintf("canvas_assignments_%s.json", time.Now().Format("2006-01-02_15-04-05"))
+
+	// Write to JSON file
+	jsonData, err := json.MarshalIndent(exportData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal data to JSON: %w", err)
+	}
+
+	if err := os.WriteFile(filename, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write JSON file: %w", err)
+	}
+
+	fmt.Printf("✅ Exported %d Canvas assignments to %s\n", len(allAssignments), filename)
 	return nil
 }

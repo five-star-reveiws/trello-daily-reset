@@ -1,9 +1,7 @@
 name: Weekly Card Creation
 
 on:
-  schedule:
-    # Fridays 11:00 PM MDT (05:00 UTC Saturday)
-    - cron: '0 5 * * 6'
+  # Scheduled runs disabled temporarily; trigger manually via Actions tab.
   workflow_dispatch: # Allow manual triggering for testing
 
 jobs:

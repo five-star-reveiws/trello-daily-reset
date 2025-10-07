@@ -1,0 +1,83 @@
+{
+  "assignments": [
+    {
+      "id": 4101,
+      "name": "4.1 ASSIGNMENT: Energy Flow: Food Chains and Food Webs",
+      "intro": "This assignment covers energy flow through ecosystems including food chains and food webs.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4101",
+      "type": "quiz"
+    },
+    {
+      "id": 4102,
+      "name": "4.2 ASSIGNMENT: Owl Pellet Lab",
+      "intro": "Lab work analyzing owl pellets to understand predator-prey relationships.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4102",
+      "type": "assignment"
+    },
+    {
+      "id": 4103,
+      "name": "4.3 ASSIGNMENT: High Grade Assignment",
+      "intro": "This assignment has a high grade and should be filtered out.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4103",
+      "type": "assignment"
+    },
+    {
+      "id": 4104,
+      "name": "4.4 QUIZ: Math Practice Quiz",
+      "intro": "Practice quiz for math concepts.",
+      "course": 202,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4104",
+      "type": "quiz"
+    },
+    {
+      "id": 4105,
+      "name": "4.5 ASSIGNMENT: No Grade Yet",
+      "intro": "This assignment has no grade yet.",
+      "course": 202,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4105",
+      "type": "assignment"
+    }
+  ],
+  "course_names": {
+    "201": "Biology Q1 (sec 2)",
+    "202": "Secondary Math I Q1 (sec 2)"
+  },
+  "grades": {
+    "4101": {
+      "grade": 75.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4101,
+      "percentage": 75.0
+    },
+    "4102": {
+      "grade": 85.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4102,
+      "percentage": 85.0
+    },
+    "4103": {
+      "grade": 95.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4103,
+      "percentage": 95.0
+    },
+    "4104": {
+      "grade": 60.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4104,
+      "percentage": 60.0
+    }
+  }
+}

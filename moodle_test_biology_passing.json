@@ -1,0 +1,25 @@
+{
+  "assignments": [
+    {
+      "id": 4101,
+      "name": "4.1 ASSIGNMENT: Energy Flow: Food Chains and Food Webs",
+      "intro": "This assignment covers energy flow through ecosystems including food chains and food webs.",
+      "course": 201,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/quiz/view.php?id=4101",
+      "type": "quiz"
+    }
+  ],
+  "course_names": {
+    "201": "Biology Q1 (sec 2)"
+  },
+  "grades": {
+    "4101": {
+      "grade": 92.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4101,
+      "percentage": 92.0
+    }
+  }
+}

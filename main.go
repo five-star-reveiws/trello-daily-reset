@@ -24,6 +24,10 @@ func main() {
 		syncMoodle   = flag.Bool("sync-moodle", false, "Sync Moodle/Open LMS assignments to Trello")
 		syncMoodleDry= flag.Bool("sync-moodle-dry-run", false, "Preview Moodle sync without Trello changes")
 		moodleTo     = flag.String("moodle-to", "", "Sync Moodle assignments due up to this date (YYYY-MM-DD); defaults to 60 days ahead")
+		moodleTestFile = flag.String("moodle-test-file", "", "Use test data file instead of API calls for Moodle sync testing")
+		exportMoodle = flag.Bool("export-moodle", false, "Export all Moodle assignments to JSON file")
+		exportCanvas = flag.Bool("export-canvas", false, "Export all Canvas assignments to JSON file")
+		exportTo     = flag.String("export-to", "", "Export assignments due up to this date (YYYY-MM-DD); defaults to end of current year")
 		syncJira     = flag.Bool("sync-jira", false, "Sync JIRA tasks to Trello")
 		jiraTasksDir = flag.String("jira-tasks-dir", "/Users/macfarnsworth/Workspaces/Alkira/mac-tasks/open-tasks", "Directory containing JIRA tasks")
 		sundownNotify= flag.String("sundown-notify", "", "Create daily sundown notification on specified board")
@@ -156,7 +160,7 @@ func main() {
 			end = time.Now().AddDate(0, 3, 0) // default 3 months ahead
 		}
 
-		if err := client.SyncMoodleAssignments(moodleClient, end, *syncMoodleDry); err != nil {
+		if err := client.SyncMoodleAssignments(moodleClient, end, *syncMoodleDry, *moodleTestFile); err != nil {
 			log.Fatalf("Failed to sync Moodle assignments: %v", err)
 		}
 		return
@@ -187,7 +191,7 @@ func main() {
 			end = time.Now().AddDate(0, 3, 0) // default 3 months ahead
 		}
 
-		if err := client.SyncMoodleAssignments(moodleClient, end, true); err != nil {
+		if err := client.SyncMoodleAssignments(moodleClient, end, true, *moodleTestFile); err != nil {
 			log.Fatalf("Failed to preview Moodle assignments: %v", err)
 		}
 		return
@@ -205,6 +209,74 @@ func main() {
 		fmt.Printf("Creating sundown notification on board: %s\n", *sundownNotify)
 		if err := client.CreateDailySundownNotification(*sundownNotify); err != nil {
 			log.Fatalf("Failed to create sundown notification: %v", err)
+		}
+		return
+	}
+
+	if *exportMoodle {
+		moodleToken := os.Getenv("MOODLE_WSTOKEN")
+		moodleURL := os.Getenv("MOODLE_BASE_URL")
+		if moodleToken == "" || moodleURL == "" {
+			log.Fatal("Please set MOODLE_WSTOKEN and MOODLE_BASE_URL in .env or environment variables")
+		}
+		moodleClient := NewMoodleClient(moodleURL, moodleToken)
+
+		// Determine end date
+		var end time.Time
+		if *exportTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", *exportTo)
+			if err != nil {
+				log.Fatalf("Invalid --export-to date format (want YYYY-MM-DD): %v", err)
+			}
+		} else {
+			// Default to end of current year
+			now := time.Now()
+			end = time.Date(now.Year(), 12, 31, 23, 59, 59, 0, now.Location())
+		}
+
+		fmt.Printf("Exporting Moodle assignments due by %s...\n", end.Format("2006-01-02"))
+
+		if err := client.ExportMoodleAssignments(moodleClient, end); err != nil {
+			log.Fatalf("Failed to export Moodle assignments: %v", err)
+		}
+		return
+	}
+
+	if *exportCanvas {
+		canvasToken := os.Getenv("CANVAS_API_TOKEN")
+		canvasURL := os.Getenv("CANVAS_BASE_URL")
+
+		if canvasToken == "" || canvasURL == "" {
+			log.Fatal("Please set CANVAS_API_TOKEN and CANVAS_BASE_URL in .env file or environment variables")
+		}
+
+		canvasClient := NewCanvasClient(canvasToken, canvasURL)
+
+		// Get Canvas user ID
+		user, err := canvasClient.GetCurrentUser()
+		if err != nil {
+			log.Fatalf("Failed to get Canvas user: %v", err)
+		}
+
+		// Determine end date
+		var end time.Time
+		if *exportTo != "" {
+			var err error
+			end, err = time.Parse("2006-01-02", *exportTo)
+			if err != nil {
+				log.Fatalf("Invalid --export-to date format (want YYYY-MM-DD): %v", err)
+			}
+		} else {
+			// Default to end of current year
+			now := time.Now()
+			end = time.Date(now.Year(), 12, 31, 23, 59, 59, 0, now.Location())
+		}
+
+		fmt.Printf("Exporting Canvas assignments for user: %s (ID: %d) due by %s...\n", user.Name, user.ID, end.Format("2006-01-02"))
+
+		if err := client.ExportCanvasAssignments(canvasClient, user.ID, end); err != nil {
+			log.Fatalf("Failed to export Canvas assignments: %v", err)
 		}
 		return
 	}

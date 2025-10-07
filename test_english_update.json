@@ -1,0 +1,25 @@
+{
+  "assignments": [
+    {
+      "id": 4201,
+      "name": "4.2 ASSIGNMENT: Romeo and Juliet Act 1",
+      "intro": "Read and analyze Romeo and Juliet Act 1.",
+      "course": 301,
+      "duedate": 1758326400,
+      "url": "https://example.moodle.com/mod/assign/view.php?id=4201",
+      "type": "assignment"
+    }
+  ],
+  "course_names": {
+    "301": "English 9 Q1 (sec 2)"
+  },
+  "grades": {
+    "4201": {
+      "grade": 75.0,
+      "grademax": 100.0,
+      "userid": 12345,
+      "itemid": 4201,
+      "percentage": 75.0
+    }
+  }
+}

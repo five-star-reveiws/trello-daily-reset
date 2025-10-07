@@ -1,11 +1,8 @@
 name: Daily Sundown Notification
 
 on:
-  schedule:
-    # Run daily at 2:00 PM UTC (8:00 AM MDT during daylight saving)
-    # Note: MDT is UTC-6, MST is UTC-7
-    - cron: '0 14 * * *'
-  workflow_dispatch: # Allow manual triggering
+  # Disabled the scheduled run so Nalani stops getting daily sundown pings.
+  workflow_dispatch: # Allow manual triggering if needed
 
 jobs:
   send-sundown-notification:

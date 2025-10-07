@@ -1,0 +1,23 @@
+{
+  "export_date": "2025-09-30T11:14:23-06:00",
+  "end_date": "2025-10-03",
+  "total_count": 1,
+  "assignments": [
+    {
+      "id": 70305,
+      "name": "10.0 ASSIGNMENT: Question of the Week (Due October 31)",
+      "intro": "\u003ch3\u003eQuestion of the Week (1 point)\u003c/h3\u003e\n\n\u003cp\u003e\u003ci\u003eLearning Objective: I can answer the question of the week that was asked during the Live Session.\u003c/i\u003e\n\n\u003c/p\u003e\u003cp\u003e\u003c/p\u003e\u003cimg src=\"https://ohsu.mrooms3.net/webservice/pluginfile.php/804193/mod_quiz/intro/Question.png\" alt=\"\" width=\"70\" height=\"70\" role=\"presentation\" class=\"img-responsive atto_image_button_left\"\u003eAfter attending the Live Session or watching the recording you can complete this assignment. On this assignment, you will submit your answer to the \"Question of the Week\" that was posed in the live session.\u0026nbsp;\u003cp\u003e\u003c/p\u003e\u003cbr\u003e\n\u003cul\u003e\u003cli\u003eYou will have 1 attempt on this assignment.\u003c/li\u003e\n\t\u003c/ul\u003e\t\u003cp\u003eClick \u003cb\u003eAttempt Quiz Now\u003c/b\u003e to begin the assignment.\u003c/p\u003e \u003cp\u003eIf you need to stop working on your assignment for any reason, click \u003cb\u003eFinish Attempt\u003c/b\u003e (in the upper right corner of the quiz navigation page) and it will save your work. You will be able to return to your attempt and complete your answers.\u003c/p\u003e",
+      "course": 3592,
+      "duedate": 1759363200,
+      "url": "",
+      "Type": "quiz"
+    }
+  ],
+  "course_names": {
+    "3592": "Secondary Math I Q1 (sec 2)",
+    "3614": "English 9 Q1 (sec 2)",
+    "3622": "Biology Q1 (sec 2)",
+    "3630": "Geography Q1 (sec 1)"
+  },
+  "grades": {}
+}
